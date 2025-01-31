@@ -1,0 +1,21 @@
+[package]
+name = "sdk"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+domain = { path = "../domain" }
+bevy = { version = "=0.15.0", features = ["dynamic_linking"] }
+bevy_egui = "0.32"
+egui_dock = "0.15.0"
+bevy-inspector-egui = "0.29.1"
+bevy_reflect = "0.15.0"
+bevy_render = "0.15.0"
+bevy_window = "0.15.0"
+bevy_asset = "0.15.0"
+bevy_core = "0.15.0"
+egui = "0.30.0"
+smart-default = "0.7.1"
+transform-gizmo-bevy = {git = "https://github.com/ethereumdegen/transform-gizmo.git"}
+
+
