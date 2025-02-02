@@ -1,0 +1,15 @@
+[package]
+name = "transform-gizmo"
+edition = "2021"
+version = "0.4.0"
+
+
+[dependencies]
+emath.workspace = true
+epaint.workspace = true
+ecolor.workspace = true
+glam.workspace = true
+mint.workspace = true
+enum_dispatch.workspace = true
+ahash.workspace = true
+enumset.workspace = true

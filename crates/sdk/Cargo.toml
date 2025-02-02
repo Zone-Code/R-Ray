@@ -1,0 +1,23 @@
+[package]
+name = "sdk"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+domain = { path = "../domain" }
+bevy = { version = "=0.15.0", features = ["dynamic_linking"] }
+bevy_egui.workspace = true
+egui_dock.workspace = true
+bevy-inspector-egui.workspace = true
+bevy_reflect.workspace = true
+bevy_render.workspace = true
+bevy_window.workspace = true
+bevy_asset.workspace = true
+egui.workspace = true
+smart-default.workspace = true
+transform-gizmo = {path = "../libs/transform-gizmo" }
+transform-gizmo-bevy = {path = "../libs/transform-gizmo-bevy" }
+bevy_infinite_grid = { git = "https://github.com/ForesightMiningSoftwareCorporation/bevy_infinite_grid", branch = "main" }
+
+
+
