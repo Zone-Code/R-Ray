@@ -8,6 +8,11 @@ use bevy_inspector_egui::bevy_inspector::{
 use bevy_inspector_egui::DefaultInspectorConfigPlugin;
 use camera::{camera_movement, SdkCamera};
 use std::any::TypeId;
+use bevy::ecs::observer::TriggerTargets;
+use bevy::picking::backend::PointerHits;
+use bevy::picking::focus::HoverMap;
+use bevy::picking::pointer::{PointerAction, PointerInput, PointerMap};
+use bevy::picking::pointer::PointerAction::Pressed;
 // use bevy_mod_picking::backends::egui::EguiPointer;
 // use bevy_mod_picking::prelude::*;
 use bevy_reflect::TypeRegistry;
@@ -42,6 +47,7 @@ fn main() {
         }))
         // .add_plugins(bevy_framepace::FramepacePlugin) // reduces input lag
         .add_plugins(DefaultInspectorConfigPlugin)
+        .add_plugins(MeshPickingPlugin)
         .add_plugins(bevy_egui::EguiPlugin)
         .add_plugins(TransformGizmoPlugin)
         // .add_plugins(bevy_mod_picking::plugins::DefaultPickingPlugins)
@@ -59,12 +65,35 @@ fn main() {
         .add_systems(Update, (
             draw_gizmo, 
             camera_movement, 
-            handle_input
+            handle_input,
+            pick_system
         ))
         .register_type::<SdkCamera>()
         .register_type::<Option<Handle<Image>>>()
         .register_type::<AlphaMode>()
         .run();
+}
+
+pub fn pick_system(
+    mut mouse_events: Res<ButtonInput<MouseButton>>,
+    targeted: Query<(Entity, Option<&mut GizmoTarget>)>,
+    hover_map: Res<HoverMap>,
+    mut commands: Commands
+) {
+    if mouse_events.just_pressed(MouseButton::Left) {
+        for (_pointer, pointer_map) in hover_map.iter() {
+            println!("{:?}", pointer_map);
+            let option = pointer_map.iter().next();
+            if let Some((entity, target)) = option {
+                println!("{:?} -> {:?}", _pointer, entity);
+                for (e, _) in targeted.iter().filter(|(e, _)| entity != e) {
+                    commands.entity(e).remove::<GizmoTarget>();
+                }
+
+                commands.entity(entity.clone()).insert(GizmoTarget::default());
+            }
+        }
+    }
 }
 
 #[derive(Component)]
@@ -430,6 +459,9 @@ fn setup(
                 Transform::from_translation((box_thickness + 0.05) * Vec3::Y),
             ));
         });
+
+
+
     // directional light
     commands.spawn((
         DirectionalLight {
@@ -447,7 +479,9 @@ fn setup(
             .looking_at(Vec3::new(0.0, box_offset, 0.0), Vec3::Y),
         MainCamera,
         SdkCamera::default(),
-        GizmoCamera
+        GizmoCamera,
+        RayCastPickable
         // PickRaycastSource,
     ));
 }
+
