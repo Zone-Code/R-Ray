@@ -1,6 +1,8 @@
 pub mod asset;
 pub mod camera_viewport;
 pub mod resource;
+mod hierarchy;
+pub mod utils;
 
 use crate::ui::asset::select_asset;
 use crate::ui::resource::select_resource;
@@ -19,7 +21,6 @@ use egui_dock::{DockArea, DockState, NodeIndex, Style};
 use egui_lucide_icons::icons;
 use std::any::TypeId;
 use bevy::color::palettes;
-use crate::utils::SrgbaExt;
 
 #[derive(Debug)]
 pub enum EguiWindow {
@@ -66,7 +67,7 @@ impl egui_dock::TabViewer for TabViewer<'_> {
                 *self.viewport_rect = ui.clip_rect();
             }
             EguiWindow::Hierarchy => {
-                let selected = hierarchy_ui(self.world, ui, self.selected_entities);
+                let selected = hierarchy::hierarchy_ui(self.world, ui, self.selected_entities);
                 if selected {
                     *self.selection = InspectorSelection::Entities;
                 }

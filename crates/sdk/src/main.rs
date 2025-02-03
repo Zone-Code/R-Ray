@@ -1,6 +1,13 @@
+use bevy::color::palettes::tailwind;
+use bevy::ecs::observer::TriggerTargets;
+use bevy::picking::backend::PointerHits;
+use bevy::picking::focus::HoverMap;
+use bevy::picking::pointer::PointerAction::Pressed;
+use bevy::picking::pointer::{PointerAction, PointerInput, PointerMap};
 use bevy::prelude::*;
 use bevy_asset::{ReflectAsset, UntypedAssetId};
 use bevy_egui::{EguiContext, EguiContextSettings, EguiPostUpdateSet};
+use bevy_infinite_grid::{InfiniteGridBundle, InfiniteGridPlugin};
 use bevy_inspector_egui::bevy_inspector::hierarchy::{hierarchy_ui, SelectedEntities};
 use bevy_inspector_egui::bevy_inspector::{
     self, ui_for_entities_shared_components, ui_for_entity_with_children,
@@ -8,37 +15,37 @@ use bevy_inspector_egui::bevy_inspector::{
 use bevy_inspector_egui::DefaultInspectorConfigPlugin;
 use camera::{camera_movement, SdkCamera};
 use std::any::TypeId;
-use bevy::ecs::observer::TriggerTargets;
-use bevy::picking::backend::PointerHits;
-use bevy::picking::focus::HoverMap;
-use bevy::picking::pointer::{PointerAction, PointerInput, PointerMap};
-use bevy::picking::pointer::PointerAction::Pressed;
-use bevy_infinite_grid::{InfiniteGridBundle, InfiniteGridPlugin};
+use std::time::Duration;
+use bevy_inspector_egui::inspector_egui_impls::InspectorEguiImpl;
 // use bevy_mod_picking::backends::egui::EguiPointer;
 // use bevy_mod_picking::prelude::*;
+use crate::domain::SdkEntityIcon;
+use crate::editor_commands::{handle_input, HistoryManager};
+use crate::gizmo::draw_gizmo;
+use crate::ui::camera_viewport::set_camera_viewport;
+use crate::ui::{show_ui_system, UiState};
 use bevy_reflect::TypeRegistry;
 use bevy_render::camera::{CameraProjection, Viewport};
 use bevy_window::{PresentMode, PrimaryWindow, Window, WindowMode, WindowTheme};
-use egui::include_image;
+use egui::{include_image, Color32};
 use egui_dock::{DockArea, DockState, NodeIndex, Style};
-use transform_gizmo_bevy::{GizmoCamera, GizmoHotkeys, GizmoOptions, GizmoTarget, TransformGizmoPlugin};
+use egui_lucide_icons::icons;
+use transform_gizmo_bevy::{
+    GizmoCamera, GizmoHotkeys, GizmoOptions, GizmoTarget, TransformGizmoPlugin,
+};
 #[cfg(egui_dock_gizmo)]
 use transform_gizmo_egui::GizmoMode;
-use crate::editor_commands::{handle_input, HistoryManager};
-use crate::gizmo::draw_gizmo;
-use crate::ui::{show_ui_system, UiState};
-use crate::ui::camera_viewport::set_camera_viewport;
+use crate::utils::SdkColor;
 
 /// Placeholder type if gizmo is disabled.
 #[cfg(not(egui_dock_gizmo))]
 #[derive(Clone, Copy)]
 struct GizmoMode;
 
-
 mod camera;
-mod gizmo;
 mod domain;
 mod editor_commands;
+mod gizmo;
 mod ui;
 mod utils;
 
@@ -69,12 +76,10 @@ fn main() {
                 .before(TransformSystem::TransformPropagate),
         )
         .add_systems(PostUpdate, set_camera_viewport.after(show_ui_system))
-        .add_systems(Update, (
-            draw_gizmo, 
-            camera_movement,
-            handle_input,
-            pick_system
-        ))
+        .add_systems(
+            Update,
+            (draw_gizmo, camera_movement, handle_input, pick_system, update_icons),
+        )
         .insert_resource(GizmoOptions {
             hotkeys: Some(GizmoHotkeys {
                 enable_snapping: Some(KeyCode::ControlLeft),
@@ -92,6 +97,7 @@ fn main() {
             ..default()
         })
         .register_type::<SdkCamera>()
+        .register_type::<SdkEntityIcon>()
         .register_type::<Option<Handle<Image>>>()
         .register_type::<AlphaMode>()
         .run();
@@ -117,10 +123,11 @@ pub fn pick_system(
 #[derive(Component)]
 struct MainCamera;
 
+fn init_window(mut query: Query<(Entity, &mut Window)>, mut commands: Commands) {
+    for (e, mut window) in query.iter_mut() {
+        window.set_maximized(true);
 
-fn init_window(mut query: Query<&mut Window>) {
-    for mut window in query.iter_mut() {
-        window.set_maximized(true)
+        commands.entity(e).insert(PickingBehavior::IGNORE);
     }
 }
 
@@ -129,7 +136,6 @@ fn setup(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
-
     commands.spawn(InfiniteGridBundle::default());
 
     let box_size = 2.0;
@@ -222,17 +228,30 @@ fn setup(
             })),
         ))
         .with_children(|builder| {
-            builder.spawn((
-                PointLight {
-                    color: Color::WHITE,
-                    intensity: 25000.0,
-                    ..Default::default()
-                },
-                Transform::from_translation((box_thickness + 0.05) * Vec3::Y),
-            ));
+            builder
+                .spawn((
+                    PointLight {
+                        color: Color::WHITE,
+                        intensity: 25000.0,
+                        ..Default::default()
+                    },
+                    SdkEntityIcon::new(
+                        icons::lucide::LIGHTBULB,
+                        utils::SdkColor::Bevy(Color::from(tailwind::YELLOW_500)).into(),
+                    ),
+                    Transform::from_translation((box_thickness + 0.05) * Vec3::Y),
+                ))
+                .with_children(|builder| {
+                    builder.spawn((
+                        PointLight {
+                            color: Color::WHITE,
+                            intensity: 25000.0,
+                            ..Default::default()
+                        },
+                        Transform::from_translation((box_thickness + 0.05) * Vec3::Y),
+                    ));
+                });
         });
-
-
 
     // directional light
     commands.spawn((
@@ -252,8 +271,45 @@ fn setup(
         MainCamera,
         SdkCamera::default(),
         GizmoCamera,
-        RayCastPickable
-        // PickRaycastSource,
+        RayCastPickable,
     ));
 }
 
+
+fn update_icons(
+    light_query: Query<Entity, (With<PointLight>, Without<SdkEntityIcon>)>,
+    camera_query: Query<Entity, (With<Camera3d>, Without<SdkEntityIcon>)>,
+    mesh_query: Query<Entity, (With<Mesh3d>, Without<SdkEntityIcon>)>,
+    dir_light_query: Query<Entity, (With<DirectionalLight>, Without<SdkEntityIcon>)>,
+    mut commands: Commands
+){
+    for e in light_query.iter() {
+        commands.entity(e).insert(SdkEntityIcon::new(
+            icons::lucide::LIGHTBULB,
+            utils::SdkColor::Bevy(Color::from(tailwind::YELLOW_500)).into(),
+        ));
+        println!("inserted icon for {} ", e);
+    }
+    for e in camera_query.iter() {
+        commands.entity(e).insert(SdkEntityIcon::new(
+            icons::lucide::VIDEO,
+            utils::SdkColor::Bevy(Color::from(tailwind::BLUE_500)).into(),
+        ));
+        println!("inserted icon for {} ", e);
+    }
+    for e in mesh_query.iter() {
+        commands.entity(e).insert(SdkEntityIcon::new(
+            icons::lucide::BOX,
+            utils::SdkColor::Bevy(Color::from(tailwind::GREEN_400)).into(),
+        ));
+        println!("inserted icon for {} ", e);
+    }
+
+    for e in dir_light_query.iter() {
+        commands.entity(e).insert(SdkEntityIcon::new(
+            icons::lucide::SUN,
+            utils::SdkColor::Bevy(Color::from(tailwind::GREEN_400)).into(),
+        ));
+        println!("inserted icon for {} ", e);
+    }
+}

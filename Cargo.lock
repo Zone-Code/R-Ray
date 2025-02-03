@@ -4378,6 +4378,7 @@ dependencies = [
  "egui-lucide-icons",
  "egui_dock",
  "egui_extras",
+ "itertools 0.14.0",
  "smart-default",
  "transform-gizmo",
  "transform-gizmo-bevy",
