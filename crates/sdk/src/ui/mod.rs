@@ -2,20 +2,24 @@ pub mod asset;
 pub mod camera_viewport;
 pub mod resource;
 
+use crate::ui::asset::select_asset;
+use crate::ui::resource::select_resource;
+use crate::GizmoMode;
 use bevy::prelude::{AppTypeRegistry, Resource, With, World};
 use bevy_asset::UntypedAssetId;
+use bevy_egui::EguiContext;
 use bevy_inspector_egui::bevy_inspector;
 use bevy_inspector_egui::bevy_inspector::hierarchy::{hierarchy_ui, SelectedEntities};
 use bevy_inspector_egui::bevy_inspector::{
     ui_for_entities_shared_components, ui_for_entity_with_children,
 };
-use egui_dock::{DockArea, DockState, NodeIndex, Style};
-use std::any::TypeId;
-use bevy_egui::EguiContext;
 use bevy_window::PrimaryWindow;
-use crate::GizmoMode;
-use crate::ui::asset::select_asset;
-use crate::ui::resource::select_resource;
+use egui::{include_image, Color32, Image, ImageSource, Vec2};
+use egui_dock::{DockArea, DockState, NodeIndex, Style};
+use egui_lucide_icons::icons;
+use std::any::TypeId;
+use bevy::color::palettes;
+use crate::utils::SrgbaExt;
 
 #[derive(Debug)]
 pub enum EguiWindow {
@@ -25,8 +29,6 @@ pub enum EguiWindow {
     Assets,
     Inspector,
 }
-
-
 
 #[derive(Resource)]
 pub struct UiState {
@@ -62,8 +64,6 @@ impl egui_dock::TabViewer for TabViewer<'_> {
         match window {
             EguiWindow::GameView => {
                 *self.viewport_rect = ui.clip_rect();
-
-                // draw_gizmo(ui, self.world, self.selected_entities, self.gizmo_mode);
             }
             EguiWindow::Hierarchy => {
                 let selected = hierarchy_ui(self.world, ui, self.selected_entities);
@@ -155,6 +155,8 @@ pub fn show_ui_system(world: &mut World) {
         return;
     };
     let mut egui_context = egui_context.clone();
+
+    egui_extras::install_image_loaders(&egui_context.get_mut());
 
     world.resource_scope::<UiState, _>(|world, mut ui_state| {
         ui_state.ui(world, egui_context.get_mut())

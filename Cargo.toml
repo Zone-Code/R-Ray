@@ -17,6 +17,10 @@ opt-level = 3
 [workspace.dependencies]
 transform-gizmo = {path = "crates/libs/transform-gizmo" }
 transform-gizmo-bevy = {path = "crates/libs/transform-gizmo-bevy" }
+typesafe-icons-macro = {path = "crates/libs/typesafe-icons-macro"}
+egui-icons-macro = {path = "crates/libs/egui-icons-macro"}
+egui-lucide-icons = {path = "crates/libs/egui-lucide-icons"}
+egui_extras = { version = "*", features = ["all_loaders"] }
 egui = "0.30"
 eframe = "0.29"
 emath = "0.29"

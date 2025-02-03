@@ -19,6 +19,7 @@ use bevy_infinite_grid::{InfiniteGridBundle, InfiniteGridPlugin};
 use bevy_reflect::TypeRegistry;
 use bevy_render::camera::{CameraProjection, Viewport};
 use bevy_window::{PresentMode, PrimaryWindow, Window, WindowMode, WindowTheme};
+use egui::include_image;
 use egui_dock::{DockArea, DockState, NodeIndex, Style};
 use transform_gizmo_bevy::{GizmoCamera, GizmoHotkeys, GizmoOptions, GizmoTarget, TransformGizmoPlugin};
 #[cfg(egui_dock_gizmo)]
@@ -39,6 +40,7 @@ mod gizmo;
 mod domain;
 mod editor_commands;
 mod ui;
+mod utils;
 
 fn main() {
     App::new()
@@ -127,6 +129,7 @@ fn setup(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
+
     commands.spawn(InfiniteGridBundle::default());
 
     let box_size = 2.0;
