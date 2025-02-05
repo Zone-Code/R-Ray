@@ -78,7 +78,13 @@ fn main() {
         .add_systems(PostUpdate, set_camera_viewport.after(show_ui_system))
         .add_systems(
             Update,
-            (draw_gizmo, camera_movement, handle_input, pick_system, update_icons),
+            (
+                draw_gizmo,
+                camera_movement,
+                handle_input,
+                pick_system,
+                update_icons
+            ),
         )
         .insert_resource(GizmoOptions {
             hotkeys: Some(GizmoHotkeys {
@@ -289,6 +295,7 @@ fn update_icons(
             utils::SdkColor::Bevy(Color::from(tailwind::YELLOW_500)).into(),
         ));
         println!("inserted icon for {} ", e);
+        return;
     }
     for e in camera_query.iter() {
         commands.entity(e).insert(SdkEntityIcon::new(
@@ -296,6 +303,7 @@ fn update_icons(
             utils::SdkColor::Bevy(Color::from(tailwind::BLUE_500)).into(),
         ));
         println!("inserted icon for {} ", e);
+        return;
     }
     for e in mesh_query.iter() {
         commands.entity(e).insert(SdkEntityIcon::new(
@@ -303,6 +311,7 @@ fn update_icons(
             utils::SdkColor::Bevy(Color::from(tailwind::GREEN_400)).into(),
         ));
         println!("inserted icon for {} ", e);
+        return;
     }
 
     for e in dir_light_query.iter() {
@@ -311,5 +320,6 @@ fn update_icons(
             utils::SdkColor::Bevy(Color::from(tailwind::GREEN_400)).into(),
         ));
         println!("inserted icon for {} ", e);
+        return;
     }
 }

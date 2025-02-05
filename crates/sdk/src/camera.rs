@@ -1,5 +1,6 @@
 use bevy::{ecs::reflect, input::mouse::{MouseMotion, MouseWheel}, prelude::*};
 use smart_default::SmartDefault;
+use crate::ui::{EguiWindow, UiState};
 
 #[derive(Component, SmartDefault, Reflect)]
 #[reflect(Component)]
@@ -14,11 +15,18 @@ pub fn camera_movement(
     time: Res<Time>,
     keyboard_input: Res<ButtonInput<KeyCode>>,
     mouse_button_input: Res<ButtonInput<MouseButton>>,
+    mut ui_state: ResMut<UiState>,
     mut mouse_motion_events: EventReader<MouseMotion>,
     mut mouse_wheel_events: EventReader<MouseWheel>,
     mut query: Query<(&mut SdkCamera, &mut Transform)>,
 ) {
-
+    if let Some((_, window)) = ui_state.state.find_active_focused() {
+        match window {
+            EguiWindow::GameView => {}
+            _ => {return;}
+        }
+    }
+    
     for (mut camera, mut transform) in query.iter_mut() {
         let mut speed = camera.speed;
 

@@ -5,19 +5,27 @@ use crate::utils::SdkColor;
 use bevy::color::Color;
 use bevy::color::Color::Srgba;
 use bevy::ecs::query::QueryFilter;
-use bevy::prelude::{AppTypeRegistry, Children, Entity, Parent, Without, World};
+use bevy::prelude::{AppTypeRegistry, Children, Entity, Parent, Resource, Without, World};
 use bevy_inspector_egui::bevy_inspector::hierarchy::{SelectedEntities, SelectionMode};
 use bevy_reflect::TypeRegistry;
 use egui::collapsing_header::CollapsingState;
-use egui::{
-    include_image, pos2, vec2, CollapsingHeader, Color32, Id, Image, ImageSource, RichText,
-    Rounding, Sense, Stroke, Vec2,
-};
+use egui::{include_image, pos2, vec2, CollapsingHeader, Color32, Id, Image, ImageSource, RichText, Rounding, Sense, Stroke, TextEdit, Vec2};
 use egui_lucide_icons::icons;
 use std::borrow::Cow;
 use std::collections::HashSet;
 use std::ops::Div;
+use bevy::color::palettes::tailwind;
 use bevy::core::Name;
+use itertools::Itertools;
+use smart_default::SmartDefault;
+use crate::ui::utils::guess_entity_name::guess_entity_name;
+
+#[derive(Resource, SmartDefault, Clone)]
+struct HierarchyExtraState {
+    #[default("")]
+    pub input: String,
+    pub is_regex: bool
+}
 
 /// Display UI of the entity hierarchy.
 ///
@@ -25,6 +33,8 @@ use bevy::core::Name;
 pub fn hierarchy_ui(world: &mut World, ui: &mut egui::Ui, selected: &mut SelectedEntities) -> bool {
     let type_registry = world.resource::<AppTypeRegistry>().clone();
     let type_registry = type_registry.read();
+
+    world.init_resource::<HierarchyExtraState>();
 
     Hierarchy {
         world,
@@ -90,6 +100,22 @@ impl<T> Hierarchy<'_, T> {
         let mut entities: Vec<_> = root_query.iter(self.world).collect();
         filter.filter_entities(self.world, &mut entities);
         entities.sort();
+
+        let hierarchy_extra_state = &mut self.world.get_resource_mut::<HierarchyExtraState>().unwrap();
+
+        ui.add(
+            TextEdit::singleline(&mut hierarchy_extra_state.input)
+                .hint_text(
+                    RichText::new("Search").color(
+                        SdkColor::Bevy(Srgba(tailwind::GRAY_400))
+                    )
+                )
+        );
+
+        ui.horizontal(|ui|{
+            ui.checkbox(&mut hierarchy_extra_state.is_regex, "Regex");
+        });
+        ui.separator();
 
         let mut selected = false;
         for &entity in &entities {

@@ -1,6 +1,7 @@
 use bevy::ecs::system::SystemState;
 use bevy::input::ButtonInput;
 use bevy::prelude::{Commands, Component, Entity, KeyCode, Res, ResMut, Resource, Transform, World};
+use crate::ui::{EguiWindow, UiState};
 
 #[derive(Resource)]
 pub struct HistoryManager {
@@ -43,16 +44,29 @@ pub trait EditorCommand: Send + Sync {
 }
 
 pub fn handle_input(
-    mut world: &mut World,
+    world: &mut World,
 ) {
-
+    
     let mut state: SystemState<(
         Res<ButtonInput<KeyCode>>,
         ResMut<HistoryManager>,
         Commands,
+        ResMut<UiState>
     )> = SystemState::new(world);
 
-    let (keyboard_input, mut history, mut commands) = state.get_mut(world);
+    let (
+        keyboard_input, 
+        mut history, 
+        mut commands,
+        mut ui_state
+    ) = state.get_mut(world);
+
+    if let Some((_, window)) = ui_state.state.find_active_focused() {
+        match window {
+            EguiWindow::GameView => {}
+            _ => {return;}
+        }
+    }
 
     if !keyboard_input.pressed(KeyCode::KeyZ) {
         return;
