@@ -1,41 +1,23 @@
 use bevy::color::palettes::tailwind;
 use bevy::ecs::observer::TriggerTargets;
-use bevy::picking::backend::PointerHits;
-use bevy::picking::focus::HoverMap;
-use bevy::picking::pointer::PointerAction::Pressed;
-use bevy::picking::pointer::{PointerAction, PointerInput, PointerMap};
 use bevy::prelude::*;
-use bevy_asset::{ReflectAsset, UntypedAssetId};
-use bevy_egui::{EguiContext, EguiContextSettings, EguiPostUpdateSet};
+use bevy_egui::{EguiPostUpdateSet};
 use bevy_infinite_grid::{InfiniteGridBundle, InfiniteGridPlugin};
-use bevy_inspector_egui::bevy_inspector::hierarchy::{hierarchy_ui, SelectedEntities};
-use bevy_inspector_egui::bevy_inspector::{
-    self, ui_for_entities_shared_components, ui_for_entity_with_children,
-};
+use bevy_inspector_egui::bevy_inspector::{self};
+use picking::GizmoPickingPlugin;
 use bevy_inspector_egui::DefaultInspectorConfigPlugin;
 use camera::{camera_movement, SdkCamera};
-use std::any::TypeId;
-use std::time::Duration;
-use bevy_inspector_egui::inspector_egui_impls::InspectorEguiImpl;
-// use bevy_mod_picking::backends::egui::EguiPointer;
-// use bevy_mod_picking::prelude::*;
 use crate::domain::SdkEntityIcon;
 use crate::editor_commands::{handle_input, HistoryManager};
 use crate::gizmo::draw_gizmo;
 use crate::ui::camera_viewport::set_camera_viewport;
 use crate::ui::{show_ui_system, UiState};
-use bevy_reflect::TypeRegistry;
-use bevy_render::camera::{CameraProjection, Viewport};
-use bevy_window::{PresentMode, PrimaryWindow, Window, WindowMode, WindowTheme};
-use egui::{include_image, Color32};
-use egui_dock::{DockArea, DockState, NodeIndex, Style};
+use bevy_render::camera::{CameraProjection};
+use bevy_window::{Window};
 use egui_lucide_icons::icons;
 use transform_gizmo_bevy::{
     GizmoCamera, GizmoHotkeys, GizmoOptions, GizmoTarget, TransformGizmoPlugin,
 };
-#[cfg(egui_dock_gizmo)]
-use transform_gizmo_egui::GizmoMode;
-use crate::utils::SdkColor;
 
 /// Placeholder type if gizmo is disabled.
 #[cfg(not(egui_dock_gizmo))]
@@ -48,6 +30,7 @@ mod editor_commands;
 mod gizmo;
 mod ui;
 mod utils;
+mod picking;
 
 fn main() {
     App::new()
@@ -58,13 +41,11 @@ fn main() {
             }),
             ..default()
         }))
-        // .add_plugins(bevy_framepace::FramepacePlugin) // reduces input lag
         .add_plugins(DefaultInspectorConfigPlugin)
-        .add_plugins(MeshPickingPlugin)
         .add_plugins(bevy_egui::EguiPlugin)
         .add_plugins(TransformGizmoPlugin)
         .add_plugins(InfiniteGridPlugin)
-        // .add_plugins(bevy_mod_picking::plugins::DefaultPickingPlugins)
+        .add_plugins(GizmoPickingPlugin)
         .insert_resource(UiState::new())
         .insert_resource(HistoryManager::new())
         .add_systems(Startup, (init_window, setup).chain())
@@ -82,7 +63,7 @@ fn main() {
                 draw_gizmo,
                 camera_movement,
                 handle_input,
-                pick_system,
+                //pick_system,
                 update_icons
             ),
         )
@@ -107,23 +88,6 @@ fn main() {
         .register_type::<Option<Handle<Image>>>()
         .register_type::<AlphaMode>()
         .run();
-}
-
-pub fn pick_system(
-    mouse_events: Res<ButtonInput<MouseButton>>,
-    hover_map: Res<HoverMap>,
-    mut ui_state: ResMut<UiState>,
-) {
-    if mouse_events.just_pressed(MouseButton::Left) {
-        for (_pointer, pointer_map) in hover_map.iter() {
-            println!("{:?}", pointer_map);
-            let option = pointer_map.iter().next();
-            if let Some((entity, target)) = option {
-                println!("{:?} -> {:?}", _pointer, entity);
-                ui_state.selected_entities.select_replace(entity.clone())
-            }
-        }
-    }
 }
 
 #[derive(Component)]

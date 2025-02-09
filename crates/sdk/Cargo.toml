@@ -17,6 +17,7 @@ bevy_reflect.workspace = true
 bevy_render.workspace = true
 bevy_window.workspace = true
 bevy_asset.workspace = true
+bevy_mod_outline.workspace = true
 egui.workspace = true
 smart-default.workspace = true
 egui_extras.workspace = true
