@@ -1,98 +1,77 @@
 use bevy::{
-    picking::pointer::{PointerInteraction, PointerPress},
     prelude::*,
+    picking::pointer::{PointerInteraction, PointerPress},
 };
-
 use transform_gizmo_bevy::GizmoTarget;
 
-#[derive(Component, Clone, Copy)]
-pub struct PickSelection {
-    pub is_selected: bool,
-}
-
-/// Integrates picking with gizmo.
+/// Інтеграція picking з гізмо.
 pub struct GizmoPickingPlugin;
 
 impl Plugin for GizmoPickingPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins(MeshPickingPlugin)
+        app
+            .add_plugins(MeshPickingPlugin)
             .add_systems(PreUpdate, toggle_picking_enabled)
-            .add_systems(Update, update_picking)
-            .add_systems(Update, manage_selection)
-            .add_systems(PostUpdate, apply_default_components);
+            .add_systems(Update, manage_selection);
     }
 }
 
+/// Вимикає picking, коли будь-який з гізмо (GizmoTarget) знаходиться у фокусі або активний.
 fn toggle_picking_enabled(
     gizmo_targets: Query<&GizmoTarget>,
     mut picking_settings: ResMut<PickingPlugin>,
 ) {
-    // Picking is disabled when any of the gizmos is focused or active.
     picking_settings.is_enabled = gizmo_targets
         .iter()
         .all(|target| !target.is_focused() && !target.is_active());
 }
 
-pub fn update_picking(
-    mut targets: Query<(Entity, &PickSelection, Option<&GizmoTarget>), Changed<PickSelection>>,
-    mut commands: Commands,
-) {
-    for (entity, pick_interaction, gizmo_target) in &mut targets {
-        let mut entity_cmd = commands.entity(entity);
-
-        if pick_interaction.is_selected {
-            if gizmo_target.is_none() {
-                entity_cmd.insert(GizmoTarget::default());
-            }
-        } else {
-            entity_cmd.remove::<GizmoTarget>();
-        }
-    }
-}
-
+/// Обробляє логіку вибору/зніття вибору об’єктів через мишку.
+///
+/// Якщо ліву кнопку відпустили, то:
+/// - Якщо не натиснуто Shift, знімаємо вибір з усіх об’єктів;
+/// - Далі для клікаємого об’єкта перевіряємо, чи має він вже `GizmoTarget`.
+///   Якщо так – знімаємо вибір (видаляємо `GizmoTarget`), інакше – додаємо його.
 pub fn manage_selection(
     pointers: Query<&PointerInteraction, Changed<PointerPress>>,
     mouse: Res<ButtonInput<MouseButton>>,
     keys: Res<ButtonInput<KeyCode>>,
-    mut pick_selection: Query<&mut PickSelection>,
+    // Запит по всіх об'єктах, на яких встановлено GizmoTarget (тобто вибраних)
+    gizmo_query: Query<Entity, With<GizmoTarget>>,
+    mut commands: Commands,
 ) {
     if !mouse.just_released(MouseButton::Left) {
         return;
     }
+
+    // Отримуємо єдиний джерело pointer (демо припускає, що його лише один)
     let pointer = match pointers.get_single() {
         Ok(pointer) => pointer,
         Err(err) => match err {
             bevy::ecs::query::QuerySingleError::NoEntities(_) => return,
             bevy::ecs::query::QuerySingleError::MultipleEntities(_) => {
-                warn!("demo only works with one pointer. delete extra pointer sources!");
+                warn!("Демо працює лише з одним джерелом pointer. Видаліть зайві!");
                 return;
             }
         },
     };
-    if let Some((e, _)) = pointer.first() {
-        let Ok(root) = pick_selection.get(*e).map(|n| n.is_selected) else {
-            return;
-        };
 
+    if let Some((entity, _)) = pointer.first() {
+        // Заздалегідь перевіряємо, чи був об’єкт вибраним
+        let was_selected = gizmo_query.get(*entity).is_ok();
+
+        // Якщо Shift не натиснуто, знімаємо вибір з усіх об’єктів
         if !keys.pressed(KeyCode::ShiftLeft) {
-            for mut pick in &mut pick_selection {
-                pick.is_selected = false;
+            for selected_entity in gizmo_query.iter() {
+                commands.entity(selected_entity).remove::<GizmoTarget>();
             }
         }
 
-        let Ok(mut pick) = pick_selection.get_mut(*e) else {
-            return;
-        };
-        pick.is_selected = root;
-        pick.is_selected ^= true;
-    }
-}
-
-fn apply_default_components(
-    mut commands: Commands,
-    query: Query<Entity, Without<PickSelection>>,
-) {
-    for entity in query.iter() {
-        commands.entity(entity).insert(PickSelection { is_selected: false });
+        // Перемикаємо стан вибору для клікаємого об’єкта
+        if was_selected {
+            commands.entity(*entity).remove::<GizmoTarget>();
+        } else {
+            commands.entity(*entity).insert(GizmoTarget::default());
+        }
     }
 }
