@@ -1,7 +1,8 @@
 [workspace]
 
 members = [
-    "domain", "sdk",
+    "crates/domain", "crates/sdk",
+    "crates/libs/*"
 ]
 resolver = "2" # Important! wgpu/Bevy needs this!
 
@@ -12,3 +13,49 @@ opt-level = 1
 # Enable a large amount of optimization in the dev profile for dependencies.
 [profile.dev.package."*"]
 opt-level = 3
+
+[workspace.dependencies]
+transform-gizmo = {path = "crates/libs/transform-gizmo" }
+transform-gizmo-bevy = {path = "crates/libs/transform-gizmo-bevy" }
+typesafe-icons-macro = {path = "crates/libs/typesafe-icons-macro"}
+egui-icons-macro = {path = "crates/libs/egui-icons-macro"}
+egui-lucide-icons = {path = "crates/libs/egui-lucide-icons"}
+egui_extras = { version = "*", features = ["all_loaders"] }
+egui = "0.30"
+eframe = "0.29"
+emath = "0.29"
+epaint = "0.29"
+ecolor = "0.29"
+glam = { version = "0.29.1", features = ["mint"] }
+mint = "0.5"
+enum_dispatch = "0.3.12"
+ahash = "0.8.7"
+enumset = "1.1.3"
+bytemuck = "1.5"
+uuid = "1.1"
+bevy = "0.15"
+bevy_tweening = "0.12"
+itertools = "0.14"
+bevy_mod_outline = "0.9.0"
+
+bevy_app = "0.15"
+bevy_image = "0.15"
+bevy_derive = "0.15"
+bevy_core = "0.15"
+bevy_core_pipeline = "0.15"
+bevy_reflect = "0.15"
+bevy_math = "0.15"
+bevy_render = "0.15"
+bevy_input = "0.15"
+bevy_asset = "0.15"
+bevy_utils = "0.15"
+bevy_pbr = "0.15"
+bevy_ecs = "0.15"
+bevy_log = "0.15"
+bevy_window = "0.15"
+bevy_transform = "0.15"
+
+bevy_egui = "0.32"
+egui_dock = "0.15.0"
+bevy-inspector-egui = "0.29.1"
+smart-default = "0.7.1"
